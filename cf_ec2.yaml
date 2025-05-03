@@ -1,0 +1,48 @@
+---
+Resources:
+  CFWebPageSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow access on ports 80 and 22
+      GroupName: cf-webpage-test-sg
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: cf-webpage-test-sg
+      VpcId: vpc-0085b94d9a3ffe6fc #Updated
+
+  CFWebpagetestEC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      SubnetId: subnet-0b68edd1b25465539 #Updated
+      SecurityGroupIds:
+        - Fn::ImportValue: !Sub ${VPCStackName}-CFWebPageSG
+      KeyName: Tafe_key_pair #Updated
+      ImageId: ami-026b57f3c383c2eec
+      Tags:
+        - Key: Name
+          Value: cf-webpage-test-ec2
+      UserData:
+        Fn::Base64:
+          !Sub |
+            #!/bin/bash -xe
+            sudo su
+            yum update -y
+            yum install -y httpd
+            cd /var/www
+            chmod 777 html
+            wget https://github.com/Cameron-TAFE/aws_test/archive/refs/heads/main.zip
+            unzip main.zip
+            cp -r aws_test-main/* /var/www/html/
+            rm -rf aws_test-main main.zip
+            systemctl enable httpd 
+            systemctl start httpd
